@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -27,6 +28,8 @@ public class CAirPlane : MonoBehaviour
 {
     [SerializeField] Cbullet PFBullet = null;
 
+    [SerializeField] GameObject mTargetObject = null;
+    
     void Start()
     {
         
@@ -36,7 +39,9 @@ public class CAirPlane : MonoBehaviour
     {
         if(Input.GetKeyUp(KeyCode.Space))
         {
-            DoFire();
+            //DoFire();
+            //DoFireAimed(mTargetObject.transform.position);
+            DoFireCircled();
         }
     }
 
@@ -65,5 +70,70 @@ public class CAirPlane : MonoBehaviour
         //ForceMode.Force <-- 시간 단위가 1초이다. 물리를 그대로 따른다.
         //ForceMode.Impulse <-- 시간 단위가 1프레임이다. 한 프레임에 주어진 힘을 모두 가한다.
 
+    }
+
+    //조준탄환 발사
+    private void DoFireAimed(Vector3 tPositionTarget)
+    {
+        Vector3 tPositionFire = Vector3.zero;
+        tPositionFire = this.transform.position;
+
+        Vector3 tVelocity = Vector3.zero;
+
+        //단위벡터
+        //임의의 크기의 임의의 방향의 벡터 = 목적지점 - 시작지점
+        //임의의 크기의 임의의 방향의 벡터<-- 정규화하여 크기가 1인 순수한 방향 벡터를 구한다.
+        Vector3 tUnitVector = (tPositionTarget - tPositionFire).normalized;
+
+        tVelocity = tUnitVector * 30f;//벡터의 스칼라 곱셈
+        //속도가 발사 시점에 결정되는 탄환
+
+        Cbullet tBullet = Instantiate<Cbullet>(PFBullet, tPositionFire, Quaternion.identity);
+        tBullet.GetComponent<Rigidbody>().AddForce(tVelocity, ForceMode.Impulse);
+    }
+
+    //유도 탄환
+    //유도탄은 기본적으로 조준탄과 같다.
+    //다만 탄환이 스스로 방향을 일정 시간 간격으로 재조준하는 것이다.
+
+
+    //원형탄환 발사
+    private void DoFireCircled()
+    {
+        //45도 간격 8발 가정
+        float tAngle = 0f;
+
+        for (int iNum = 0; iNum < 8; iNum++)
+        {
+            Vector3 tPositionFire = Vector3.zero;
+            tPositionFire = this.transform.position;
+
+            Vector3 tVelocity = Vector3.zero;
+
+            //데카르트 좌표계의 구성성분과 극좌표계의 구성성분과의 관계
+            // x = r*cosT
+            // y = r*sinT
+
+            //각도의 개념
+            //degree 도 : 한바퀴를 360등분 한 것 중 하나를 1도라고 하자. 측정치
+            //radian 호도 : 반지름이 r인 원의 원주 중에 길이가 r인 호
+            //      <-- 실수의 연산 체계에 적합하기 때문에 수학함수나 게임엔진에서는 riadian을 계산에 사용한다
+
+            // 360도 : 1도 = 2*PI : x
+            // x = PI/180
+
+
+            //크기가 1인 순수한 방향벡터를 구하기 위해 r은 1
+            tVelocity.z = 0f;
+            tVelocity.x = 1f * Mathf.Cos(tAngle * Mathf.Deg2Rad);
+            tVelocity.y = 1f * Mathf.Sin(tAngle * Mathf.Deg2Rad);
+
+            tAngle += 45f;
+
+            tVelocity = tVelocity * 30f;//속력을 스칼라 곱셈
+
+            Cbullet tBullet = Instantiate<Cbullet>(PFBullet, tPositionFire, Quaternion.identity);
+            tBullet.GetComponent<Rigidbody>().AddForce(tVelocity, ForceMode.Impulse);
+        }
     }
 }
